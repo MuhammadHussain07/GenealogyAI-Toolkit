@@ -63,7 +63,7 @@ The chatbot serves as a virtual assistant, answering genealogy-related questions
 ### Steps  
 1. Clone the repository:  
    ```bash
-   git clone https://github.com/yourusername/GenealogyAI-Toolkit.git
+   git clone https://github.com/MuhammadHussain07/GenealogyAI-Toolkit.git
    cd GenealogyAI-Toolkit
 
 ---
