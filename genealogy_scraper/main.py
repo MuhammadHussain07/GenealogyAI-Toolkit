@@ -19,7 +19,7 @@ def selenium_login():
     driver = uc.Chrome(options=options)
 
     try:
-        driver.get(ANCESTRY_URL)
+        driver.get(ANCESTRY_URL + "/login")
 
         print("[INFO] Waiting for the login form...")
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, "username")))
