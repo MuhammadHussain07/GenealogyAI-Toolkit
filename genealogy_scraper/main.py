@@ -1,4 +1,5 @@
 import time
+import random
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -6,22 +7,23 @@ from selenium.webdriver.support import expected_conditions as EC
 import csv
 
 # --- CONFIGURATIONS ---
+ANCESTRY_URL = "https://www.ancestry.com/signin"
 TREE_PAGE_URL = "https://www.ancestry.com/family-tree/tree/191247410/family?cfpid=382485586551"
-
-
+EMAIL = "anthonymdavenport@gmail.com"
+PASSWORD = "************"
 
 # --- STEP 1: Login ---
 def selenium_login():
-    print("[INFO] Launching undetected Selenium...")
+    print("[INFO] Launching Selenium...")
     options = uc.ChromeOptions()
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--start-maximized")
     driver = uc.Chrome(options=options)
 
     try:
-        driver.get(ANCESTRY_URL + "/login")
+        driver.get(ANCESTRY_URL)
 
-        print("[INFO] Waiting for the login form...")
+        print("[INFO] Waiting for login form...")
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, "username")))
 
         # Fill login credentials
@@ -36,97 +38,64 @@ def selenium_login():
         return driver
 
     except Exception as e:
-        print(f"[ERROR] Selenium login failed: {e}")
+        print(f"[ERROR] Login failed: {e}")
         driver.quit()
         return None
 
+# --- STEP 2: Extract Timeline and Sources Data ---
+def extract_profile_data(driver):
+    print("[INFO] Extracting profile data...")
+    data = {}
 
-# --- STEP 2: Extract data from the tree page ---
-def extract_tree_data(driver):
-    print("[INFO] Navigating to the tree page...")
-    driver.get(TREE_PAGE_URL)
-
-    print("[INFO] Waiting for the tree page to load...")
-    WebDriverWait(driver, 30).until(
-        EC.presence_of_all_elements_located((By.CSS_SELECTOR, "span.nodeTitle.notranslate"))
-    )
-
-    print("[INFO] Extracting tree data...")
-    data = []
-
-    # Extract names, DoBs, and image URLs
     try:
-        nodes = driver.find_elements(By.CSS_SELECTOR, "span.nodeTitle.notranslate")
-        dob_nodes = driver.find_elements(By.CSS_SELECTOR, "span.nodeInfo")
-        image_nodes = driver.find_elements(By.CSS_SELECTOR, "span.nodePhoto img")
+        # Wait for timeline section
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, "timeline")))
+        timeline_items = driver.find_elements(By.CSS_SELECTOR, "#timeline .event")
 
-        for i, node in enumerate(nodes):
-            name = node.text.strip()
-            dob = dob_nodes[i].text.strip() if i < len(dob_nodes) else "N/A"
-            image_url = image_nodes[i].get_attribute("src") if i < len(image_nodes) else "N/A"
-            data.append({"Name": name, "DoB": dob, "ImageURL": image_url})
+        timeline_data = []
+        for item in timeline_items:
+            try:
+                event_title = item.find_element(By.CLASS_NAME, "title").text.strip()
+                event_date = item.find_element(By.CLASS_NAME, "date").text.strip()
+                timeline_data.append({"Event": event_title, "Date": event_date})
+            except Exception as e:
+                print(f"[WARNING] Failed to extract timeline event: {e}")
+
+        data["Timeline"] = timeline_data
+
+        # Wait for sources section
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, "sources")))
+        sources_items = driver.find_elements(By.CSS_SELECTOR, "#sources .source-item")
+
+        sources_data = []
+        for item in sources_items:
+            try:
+                source_title = item.find_element(By.CLASS_NAME, "source-title").text.strip()
+                source_details = item.find_element(By.CLASS_NAME, "source-details").text.strip()
+
+                # If a source file needs to be opened
+                try:
+                    view_link = item.find_element(By.TAG_NAME, "a")
+                    view_link.click()
+                    time.sleep(random.uniform(2, 5))  # Avoid detection
+
+                    # Extract additional source details
+                    additional_details = driver.find_element(By.CSS_SELECTOR, "div.source-view").text.strip()
+                    sources_data.append({"Title": source_title, "Details": source_details, "Additional Details": additional_details})
+
+                    driver.back()
+                    time.sleep(random.uniform(2, 4))
+                except Exception:
+                    sources_data.append({"Title": source_title, "Details": source_details})
+            except Exception as e:
+                print(f"[WARNING] Failed to extract source item: {e}")
+
+        data["Sources"] = sources_data
 
     except Exception as e:
-        print(f"[ERROR] Failed to extract tree data: {e}")
+        print(f"[ERROR] Failed to extract profile data: {e}")
 
     return data
-
-
-# --- STEP 3: Extract detailed information ---
-def extract_details(driver, data):
-    print("[INFO] Extracting detailed information for each profile...")
-    enriched_data = []
-
-    for person in data:
-        try:
-            print(f"[INFO] Extracting details for: {person['Name']}...")
-            # Click on the person's profile
-            person_node = driver.find_element(By.XPATH, f'//span[text()="{person["Name"]}"]')
-            person_node.click()
-
-            # Wait for the profile page to load
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "hoverBirthDate")))
-
-            # Extract additional information
-            birth_date = driver.find_element(By.ID, "hoverBirthDate").text
-            birth_place = driver.find_element(By.ID, "hoverBirthPlace").text
-            death_date = driver.find_element(By.ID, "hoverDeathDate").text
-            death_place = driver.find_element(By.ID, "hoverDeathPlace").text
-
-            person.update({
-                "BirthDate": birth_date,
-                "BirthPlace": birth_place,
-                "DeathDate": death_date,
-                "DeathPlace": death_place,
-            })
-            enriched_data.append(person)
-
-            # Navigate back to the tree page
-            driver.back()
-            WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "span.nodeTitle.notranslate")))
-
-        except Exception as e:
-            print(f"[ERROR] Failed to extract details for {person['Name']}: {e}")
-            person.update({
-                "BirthDate": "N/A",
-                "BirthPlace": "N/A",
-                "DeathDate": "N/A",
-                "DeathPlace": "N/A",
-            })
-            enriched_data.append(person)
-
-    return enriched_data
-
-
-# --- STEP 4: Save the extracted data to a CSV ---
-def save_to_csv(data):
-    print("[INFO] Saving data to a CSV file...")
-    with open("ancestry_data.csv", "w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=["Name", "DoB", "ImageURL", "BirthDate", "BirthPlace", "DeathDate", "DeathPlace"])
-        writer.writeheader()
-        writer.writerows(data)
-    print("[SUCCESS] Data saved to ancestry_data.csv!")
-
 
 # --- MAIN FUNCTION ---
 def main():
@@ -135,17 +104,42 @@ def main():
         print("[ERROR] Selenium login failed. Exiting.")
         return
 
-    tree_data = extract_tree_data(driver)
-    if not tree_data:
-        print("[ERROR] No data extracted from the tree page.")
-        return
+    print("[INFO] Navigating to tree page...")
+    driver.get(TREE_PAGE_URL)
+    WebDriverWait(driver, 30).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, "span.nodeTitle.notranslate"))
+    )
 
-    detailed_data = extract_details(driver, tree_data)
-    save_to_csv(detailed_data)
+    try:
+        # Click on the first person's name
+        first_person = driver.find_element(By.CSS_SELECTOR, "span.nodeTitle.notranslate")
+        first_person.click()
+        time.sleep(random.uniform(2, 5))
 
-    driver.quit()
-    print("[INFO] Process completed successfully!")
+        # Click on the profile button
+        profile_button = driver.find_element(By.CSS_SELECTOR, "button.profile-button")
+        profile_button.click()
+        time.sleep(random.uniform(2, 5))
 
+        # Extract profile data
+        profile_data = extract_profile_data(driver)
+        print("[INFO] Extracted data:", profile_data)
+
+        # Save the data to CSV
+        with open("ancestry_profile_data.csv", "w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Section", "Data"])
+            for section, items in profile_data.items():
+                for item in items:
+                    writer.writerow([section, item])
+
+        print("[SUCCESS] Data saved to ancestry_profile_data.csv!")
+
+    except Exception as e:
+        print(f"[ERROR] Failed to extract data: {e}")
+
+    finally:
+        driver.quit()
 
 if __name__ == "__main__":
     main()
