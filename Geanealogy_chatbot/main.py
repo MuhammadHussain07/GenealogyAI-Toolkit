@@ -12,7 +12,7 @@ from langchain.schema import Document
 # File paths
 csv_file = "D:/proj/Geanealogy_chatbot/Fiverr Anthony Updated Spread Sheet.csv"
 pdf_file = "D:/proj/Geanealogy_chatbot/images_data.pdf"
-cohere_api_key = "XQrzYmfoz6dLzRaUy7A9200axGsk6b7yrL1Aa1Qo"
+cohere_api_key = "paste the api here"
 
 # Load CSV data
 def load_csv_data():
