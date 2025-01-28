@@ -8,9 +8,9 @@ from selenium.common.exceptions import *
 import undetected_chromedriver as uc
 
 # Configuration
-EMAIL = "anthonymdavenport@gmail.com"
-PASSWORD = "Jackson2008!"
-TREE_URL = "https://www.ancestry.com/family-tree/tree/191247410/family?cfpid=382485586551"
+EMAIL = "****************@gmail.com"
+PASSWORD = "************"
+TREE_URL = "paste link here"
 CSV_FILENAME = "ancestry_timeline_facts.csv"
 
 def initialize_driver():
