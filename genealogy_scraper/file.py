@@ -10,9 +10,9 @@
 # from selenium.common.exceptions import ElementClickInterceptedException, TimeoutException
 
 # # Configuration
-# EMAIL = "anthonymdavenport@gmail.com"
-# PASSWORD = "Jackson2008!"
-# TREE_URL = "https://www.ancestry.com/family-tree/tree/191247410/family?cfpid=382485586551"
+# EMAIL = "******************"
+# PASSWORD = "**************"
+# TREE_URL = "https://www.**********.com/"
 # CSV_FILENAME = "ancestry_family_tree.csv"
 
 # def initialize_driver():
