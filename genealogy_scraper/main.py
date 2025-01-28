@@ -8,8 +8,8 @@ from selenium.webdriver.support import expected_conditions as EC
 # --- CONFIGURATIONS ---
 ANCESTRY_URL = "https://www.ancestry.com/signin"
 TREE_PAGE_URL = "https://www.ancestry.com/family-tree/tree/191247410/family?cfpid=382485586551"
-EMAIL = "anthonymdavenport@gmail.com"
-PASSWORD = "Jackson2008!"
+EMAIL = "***********@gmail.com"
+PASSWORD = "*******"
 CSV_FILENAME = "ancestry_family_data.csv"
 
 def initialize_driver():
